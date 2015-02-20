@@ -23,6 +23,8 @@ namespace Dice_and_Data
         public MainWindow()
         {
             InitializeComponent();
+            SQLiteDBWrapper wrapper = SQLiteDBWrapper.getReference();
+            
         }
     }
 }
