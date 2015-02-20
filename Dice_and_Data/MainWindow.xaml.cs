@@ -25,6 +25,20 @@ namespace Dice_and_Data
             InitializeComponent();
             SQLiteDBWrapper wrapper = SQLiteDBWrapper.getReference();
             
+            //some tests...
+
+            //roll 1d10+3
+            int result = DiceRoller.d(10) + 3;
+            wrapper.RecordRoll("1d10+3", result);
+
+            //roll 4d8... 5 times
+            for (int i = 0; i < 5; i++)
+            {
+                result = DiceRoller.roll(4, 8);
+                wrapper.RecordRoll("4d8", result);
+            }
+
+
         }
     }
 }

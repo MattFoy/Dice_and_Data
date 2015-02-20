@@ -17,10 +17,20 @@ namespace Dice_and_Data
             set { System.Diagnostics.Trace.WriteLine(value); } 
         }
 
-        public static int roll(int sides)
+        public static int d(int sides)
         {
             rollCount++;
             return myRand.Next(1, sides);
-        }        
+        }
+
+        public static int roll(int diceCount, int sides)
+        {
+            int sum = 0;
+            for (int i = 0; i < diceCount; i++)
+            {
+                sum += d(sides);
+            }
+            return sum;
+        }
     }
 }
