@@ -18,7 +18,7 @@ namespace Dice_and_Data
         private int min = 0;
         public int Min { get { return min; } set { } }
         private double mean = 0;
-        public double Mean { get { return mean; } set { } }
+        public double Mean { get { return mean + constant; } set { } }
         private double variance = 0;
         public double Variance { get { return variance; } set { } }
         public double StandardDeviation { get { return Math.Sqrt(variance); } set { } }
@@ -48,7 +48,17 @@ namespace Dice_and_Data
                         {
                             min += dCount;
                             max += dCount * sideCount;
-                            rolls.Add(new RollPlan(dCount, sideCount));
+                            RollPlan replace;
+                            if ((replace = rolls.SingleOrDefault(rp => rp.sides == sideCount)) != null)
+                            {
+                                RollPlan mergedPlan = new RollPlan(replace.diceCount + dCount, replace.sides);
+                                rolls.Remove(replace);
+                                rolls.Add(mergedPlan);
+                            }
+                            else
+                            {
+                                rolls.Add(new RollPlan(dCount, sideCount));
+                            }
                         }
                     }
                     else 
@@ -97,76 +107,74 @@ namespace Dice_and_Data
             
             if (rolls.Count == 0)
             {
-                //Well shit, it's just a constant.
+                // It's just a constant?
             }
             else if (rolls.Count == 1)
             {
+                //Not a strictly necessary if block, but there's no need to do the whole algorithm on such a simple case
                 for (int i = min; i <= max; i++)
                 {
                     pTable.Add(i, rolls[0].p(i));
                 }
                 mean = rolls[0].E();
             }
-            else
+            else 
             {
+                //TODO: work some magic to get around the ridiculous performance issues caused by n-ary cartesian products
                 // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
                 // (Also calculate the mean while we're traversing this collection)
-                List<List<int>> sets = new List<List<int>>();
+                List<List<KeyValuePair<int,double>>> sets = new List<List<KeyValuePair<int,double>>>();
                 double avgSum = 0;
-                int totalDice = 0;
                 foreach (RollPlan rp in rolls)
                 {
                     avgSum += rp.E();
-                    totalDice += rp.diceCount;
-                    for (int j = 0; j < rp.diceCount; j++)
-                    {
-                        List<int> possibilities = new List<int>();
-                        for (int k = 1; k <= rp.sides; k++)
-                        {
-                            possibilities.Add(k);
-                        }
-                        sets.Add(possibilities);
+                    List<KeyValuePair<int, double>> possibilities = new List<KeyValuePair<int, double>>();
+                    for (int k = rp.min; k <= rp.max; k++)
+                    {                            
+                        possibilities.Add(new KeyValuePair<int, double>(k, rp.p(k)));
                     }
+                    sets.Add(possibilities);                    
                 }
-                mean = avgSum / rolls.Count;
+                mean = avgSum;
 
                 // Step 2: Generate the cartesian product of these sets with LINQ magic
-                IEnumerable<IEnumerable<int>> result = sets
+                IEnumerable<IEnumerable<KeyValuePair<int,double>>> result = sets
                     .Select(list => list.AsEnumerable())
                     .CartesianProduct();
 
 
                 // Step 3: Create an array to store combination totals
-                int[] possibleCombinations = Enumerable.Repeat(0, max - min + 1).ToArray();
+                double[] partialProbabilities = Enumerable.Repeat(0.0, max - min + 1).ToArray();
 
-                int totalSum = 0;
-                foreach (IEnumerable<int> topLvl in result)
+                foreach (IEnumerable<KeyValuePair<int, double>> topLvl in result)
                 {
                     int currentSum = 0;
-                    foreach (int i in topLvl)
+                    double currentP = 1;
+                    foreach (KeyValuePair<int, double> kvp in topLvl)
                     {
-                        System.Diagnostics.Trace.Write(i + ", ");
-                        currentSum += i;
+                        //System.Diagnostics.Trace.Write(kvp + ", ");
+                        currentSum += kvp.Key;
+                        currentP *= kvp.Value;
                     }
-                    System.Diagnostics.Trace.WriteLine("");
-                    totalSum += 1;
-                    possibleCombinations[(currentSum - min)]++;
+                    //System.Diagnostics.Trace.WriteLine("");
+                    partialProbabilities[(currentSum - min)] += currentP;
                 }
 
                 // Step 4: Calculate how many possibilities each value weighs relative to the total number.
-                for (int i = 0; i < possibleCombinations.Length; i++)
+                for (int i = 0; i < partialProbabilities.Length; i++)
                 {
-                    pTable.Add(i + min, ((double)possibleCombinations[i] / (double)totalSum));
+                    pTable.Add(i + min, partialProbabilities[i]);
                 }
             }
+            
 
-            // Step 5: Calculate the variance
-            double sqrdDiffTotal = 0;
+            // Step 5: Calculate the variance using the forumla  SUM(i=min;i<=max): (xi - mean)^2 * p(xi)
+            // (Credit to http://www.stat.yale.edu/Courses/1997-98/101/rvmnvar.htm)
+            variance = 0;
             foreach (KeyValuePair<int, double> entry in pTable)
             {
-                sqrdDiffTotal += Math.Pow(entry.Key - mean, 2);
+                variance += Math.Pow(entry.Key - mean, 2) * entry.Value;
             }
-            variance = sqrdDiffTotal / pTable.Count;
             //System.Diagnostics.Trace.WriteLine("whoa!");
             
         }

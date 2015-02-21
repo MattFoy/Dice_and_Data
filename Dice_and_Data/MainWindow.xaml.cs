@@ -25,7 +25,7 @@ namespace Dice_and_Data
             InitializeComponent();
             
             Double sum = 0;
-            RollPattern rp1 = new RollPattern("2d6");
+            RollPattern rp1 = new RollPattern("5d6 + 5d8 + 5d10 + 5d12 + 5d20");
             for (int i = rp1.Min; i <= rp1.Max; i++)
             {
                 sum += rp1.p(i);
@@ -34,8 +34,7 @@ namespace Dice_and_Data
             System.Diagnostics.Trace.WriteLine("Sum = " + sum.ToString());
             System.Diagnostics.Trace.WriteLine("Average = " + rp1.Mean);
             System.Diagnostics.Trace.WriteLine("StdDev = " + rp1.StandardDeviation);
-
-            
+            System.Diagnostics.Trace.WriteLine("Pattern = " + rp1.ToString());            
             
         }
     }
