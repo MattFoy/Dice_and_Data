@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Data.SQLite;
 using System.Diagnostics;
 
-namespace Dice_and_Data
+namespace Dice_and_Data.Data
 {
     class SQLiteDBWrapper
     {

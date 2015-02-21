@@ -20,6 +20,7 @@ namespace Dice_and_Data
 
         public RollPlan(int diceCount, int sides)
         {
+            
             this.diceCount = diceCount;
             this.sides = sides;
 

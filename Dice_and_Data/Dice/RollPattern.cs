@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Dice_and_Data.Dice;
+using Dice_and_Data.Data;
 
 namespace Dice_and_Data
 {
@@ -22,6 +23,8 @@ namespace Dice_and_Data
         private double variance = 0;
         public double Variance { get { return variance; } set { } }
         public double StandardDeviation { get { return Math.Sqrt(variance); } set { } }
+        private long msTime = 0;
+        public long MsTime { get { return msTime; } set { } }
 
         private Dictionary<int, double> pTable;
 
@@ -103,6 +106,9 @@ namespace Dice_and_Data
         private void GenerateProbabilityDistribution()
         {
             // (re)Initialize the table
+            System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+            timer.Start();
+
             pTable = new Dictionary<int, double>(); 
             
             if (rolls.Count == 0)
@@ -176,10 +182,10 @@ namespace Dice_and_Data
                 variance += Math.Pow(entry.Key - mean, 2) * entry.Value;
             }
             //System.Diagnostics.Trace.WriteLine("whoa!");
-            
-        }
-
-        
+            timer.Stop();
+            msTime = timer.ElapsedMilliseconds;
+            CacheResults();
+        }        
 
         public static String ValidatePattern(String pattern)
         {
@@ -230,6 +236,16 @@ namespace Dice_and_Data
             }
             res = sb.ToString();
             return res;
+        }
+
+        private void CacheResults()
+        {
+            String json1 = JSONconverter_pTables.Dict2JSON(pTable);
+            System.Diagnostics.Trace.WriteLine(json1);
+            Dictionary<int, double> pTable2 = JSONconverter_pTables.JSON2Dict(json1);
+            String json2 = JSONconverter_pTables.Dict2JSON(pTable);
+            System.Diagnostics.Trace.WriteLine(json2);
+            System.Diagnostics.Trace.WriteLine((json1 == json2) ? "Same!" : "Diff!");
         }
     }
 }

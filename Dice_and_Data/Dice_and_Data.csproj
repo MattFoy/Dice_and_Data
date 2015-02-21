@@ -70,6 +70,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Data\JSONconverter_pTables.cs" />
     <Compile Include="Dice\AdvMath.cs" />
     <Compile Include="Dice\DicePatternFormatException.cs" />
     <Compile Include="Dice\RollPattern.cs" />
