@@ -25,13 +25,14 @@ namespace Dice_and_Data
             InitializeComponent();
             
             Double sum = 0;
-            RollPattern rp1 = new RollPattern("7d4 + 5d6 + 7d8 + 2");
+            RollPattern rp1 = new RollPattern("2d6");
             for (int i = rp1.Min; i <= rp1.Max; i++)
             {
                 sum += rp1.p(i);
                 System.Diagnostics.Trace.WriteLine("p("+i+") = " + rp1.p(i).ToString());
             }
-            System.Diagnostics.Trace.WriteLine("sum = " + sum.ToString());
+            System.Diagnostics.Trace.WriteLine("Sum = " + sum.ToString());
+            System.Diagnostics.Trace.WriteLine("Average = " + rp1.Mean);
             System.Diagnostics.Trace.WriteLine("StdDev = " + rp1.StandardDeviation);
 
             

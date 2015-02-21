@@ -92,60 +92,83 @@ namespace Dice_and_Data
 
         private void GenerateProbabilityDistribution()
         {
-            // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
-            // (Also calculate the mean while we're traversing this collection)
-            List<List<int>> sets = new List<List<int>>();
-            double avgSum = 0;
-            foreach (RollPlan rp in rolls)
-            {
-                avgSum += rp.E();
-                List<int> possibilities = new List<int>();
-                for (int i = rp.min; i <= rp.max; i++)
-                {
-                    possibilities.Add(i);
-                }
-                sets.Add(possibilities);
-            }
-            mean = avgSum / rolls.Count;
-
-            // Step 2: Generate the cartesian product of these sets with LINQ magic
-            IEnumerable<IEnumerable<int>> result = sets
-                .Select(list => list.AsEnumerable())
-                .CartesianProduct();
-
-
-            // Step 3: Create an array to store combination totals
-            int[] possibleCombinations = Enumerable.Repeat(0, max - min + 1).ToArray();
-
-            int totalSum = 0;
-            foreach (IEnumerable<int> topLvl in result)
-            {
-                int currentSum = 0;
-                foreach (int i in topLvl)
-                {
-                    currentSum += i;
-                }
-                totalSum += 1;
-                possibleCombinations[currentSum-min]++;
-            }
-
             // (re)Initialize the table
-            pTable = new Dictionary<int, double>();
-
-            // Step 4: Calculate how many possibilities each value weighs relative to the total number.
-            for (int i = 0; i < possibleCombinations.Length; i++)
+            pTable = new Dictionary<int, double>(); 
+            
+            if (rolls.Count == 0)
             {
-                pTable.Add(i + min, ((double)possibleCombinations[i] / (double)totalSum));
+                //Well shit, it's just a constant.
+            }
+            else if (rolls.Count == 1)
+            {
+                for (int i = min; i <= max; i++)
+                {
+                    pTable.Add(i, rolls[0].p(i));
+                }
+                mean = rolls[0].E();
+            }
+            else
+            {
+                // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
+                // (Also calculate the mean while we're traversing this collection)
+                List<List<int>> sets = new List<List<int>>();
+                double avgSum = 0;
+                int totalDice = 0;
+                foreach (RollPlan rp in rolls)
+                {
+                    avgSum += rp.E();
+                    totalDice += rp.diceCount;
+                    for (int j = 0; j < rp.diceCount; j++)
+                    {
+                        List<int> possibilities = new List<int>();
+                        for (int k = 1; k <= rp.sides; k++)
+                        {
+                            possibilities.Add(k);
+                        }
+                        sets.Add(possibilities);
+                    }
+                }
+                mean = avgSum / rolls.Count;
+
+                // Step 2: Generate the cartesian product of these sets with LINQ magic
+                IEnumerable<IEnumerable<int>> result = sets
+                    .Select(list => list.AsEnumerable())
+                    .CartesianProduct();
+
+
+                // Step 3: Create an array to store combination totals
+                int[] possibleCombinations = Enumerable.Repeat(0, max - min + 1).ToArray();
+
+                int totalSum = 0;
+                foreach (IEnumerable<int> topLvl in result)
+                {
+                    int currentSum = 0;
+                    foreach (int i in topLvl)
+                    {
+                        System.Diagnostics.Trace.Write(i + ", ");
+                        currentSum += i;
+                    }
+                    System.Diagnostics.Trace.WriteLine("");
+                    totalSum += 1;
+                    possibleCombinations[(currentSum - min)]++;
+                }
+
+                // Step 4: Calculate how many possibilities each value weighs relative to the total number.
+                for (int i = 0; i < possibleCombinations.Length; i++)
+                {
+                    pTable.Add(i + min, ((double)possibleCombinations[i] / (double)totalSum));
+                }
             }
 
             // Step 5: Calculate the variance
             double sqrdDiffTotal = 0;
             foreach (KeyValuePair<int, double> entry in pTable)
             {
-                sqrdDiffTotal += Math.Pow(entry.Value - mean, 2);
+                sqrdDiffTotal += Math.Pow(entry.Key - mean, 2);
             }
             variance = sqrdDiffTotal / pTable.Count;
             //System.Diagnostics.Trace.WriteLine("whoa!");
+            
         }
 
         
