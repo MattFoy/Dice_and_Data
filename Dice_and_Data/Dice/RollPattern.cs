@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using Dice_and_Data.Dice;
 
 namespace Dice_and_Data
 {
@@ -12,6 +13,17 @@ namespace Dice_and_Data
         private string patternString = "";
         private List<RollPlan> rolls = new List<RollPlan>();
         private int constant = 0;
+        private int max = 0;
+        public int Max { get { return max; } set { } }
+        private int min = 0;
+        public int Min { get { return min; } set { } }
+        private double mean = 0;
+        public double Mean { get { return mean; } set { } }
+        private double variance = 0;
+        public double Variance { get { return variance; } set { } }
+        public double StandardDeviation { get { return Math.Sqrt(variance); } set { } }
+
+        private Dictionary<int, double> pTable;
 
         public RollPattern(String rollString)
         {
@@ -34,6 +46,8 @@ namespace Dice_and_Data
                         int sideCount = Int32.Parse(rawRollPlan[1]);
                         if (dCount > 0 && sideCount > 0)
                         {
+                            min += dCount;
+                            max += dCount * sideCount;
                             rolls.Add(new RollPlan(dCount, sideCount));
                         }
                     }
@@ -44,6 +58,7 @@ namespace Dice_and_Data
                     }
                 }
                 this.patternString = this.ToString();
+                GenerateProbabilityDistribution();
             }
             else
             {
@@ -62,6 +77,78 @@ namespace Dice_and_Data
             SQLiteDBWrapper.getReference().RecordRoll(this.ToString(), result);
             return result;
         }
+
+        public double p(int x)
+        {
+            if (pTable.ContainsKey(x))
+            {
+                return pTable[x];
+            }
+            else
+            {
+                return 0.0;
+            }            
+        }
+
+        private void GenerateProbabilityDistribution()
+        {
+            // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
+            // (Also calculate the mean while we're traversing this collection)
+            List<List<int>> sets = new List<List<int>>();
+            double avgSum = 0;
+            foreach (RollPlan rp in rolls)
+            {
+                avgSum += rp.E();
+                List<int> possibilities = new List<int>();
+                for (int i = rp.min; i <= rp.max; i++)
+                {
+                    possibilities.Add(i);
+                }
+                sets.Add(possibilities);
+            }
+            mean = avgSum / rolls.Count;
+
+            // Step 2: Generate the cartesian product of these sets with LINQ magic
+            IEnumerable<IEnumerable<int>> result = sets
+                .Select(list => list.AsEnumerable())
+                .CartesianProduct();
+
+
+            // Step 3: Create an array to store combination totals
+            int[] possibleCombinations = Enumerable.Repeat(0, max - min + 1).ToArray();
+
+            int totalSum = 0;
+            foreach (IEnumerable<int> topLvl in result)
+            {
+                int currentSum = 0;
+                foreach (int i in topLvl)
+                {
+                    currentSum += i;
+                }
+                totalSum += 1;
+                possibleCombinations[currentSum-min]++;
+            }
+
+            // (re)Initialize the table
+            pTable = new Dictionary<int, double>();
+
+            // Step 4: Calculate how many possibilities each value weighs relative to the total number.
+            for (int i = 0; i < possibleCombinations.Length; i++)
+            {
+                pTable.Add(i + min, ((double)possibleCombinations[i] / (double)totalSum));
+            }
+
+            // Step 5: Calculate the variance
+            double sqrdDiffTotal = 0;
+            foreach (KeyValuePair<int, double> entry in pTable)
+            {
+                sqrdDiffTotal += Math.Pow(entry.Value - mean, 2);
+            }
+            variance = sqrdDiffTotal / pTable.Count;
+            //System.Diagnostics.Trace.WriteLine("whoa!");
+        }
+
+        
 
         public static String ValidatePattern(String pattern)
         {

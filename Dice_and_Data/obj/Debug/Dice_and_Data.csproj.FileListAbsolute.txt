@@ -1,11 +1,4 @@
-c:\users\matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\Dice_and_Data.exe.config
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\MainWindow.baml
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\MainWindow.g.cs
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\App.g.cs
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data_MarkupCompile.cache
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.g.resources
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.Properties.Resources.resources
-C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.csproj.GenerateResource.Cache
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\Dice_and_Data.exe.config
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\Dice_and_Data.exe
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\Dice_and_Data.pdb
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\EntityFramework.dll
@@ -16,6 +9,13 @@ C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Da
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\EntityFramework.xml
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\EntityFramework.SqlServer.xml
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\bin\Debug\System.Data.SQLite.xml
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\MainWindow.baml
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\MainWindow.g.cs
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\App.g.cs
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data_MarkupCompile.cache
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.g.resources
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.Properties.Resources.resources
+C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.csproj.GenerateResource.Cache
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.exe
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.pdb
 C:\Users\Matthew\documents\visual studio 2013\Projects\Dice_and_Data\Dice_and_Data\obj\Debug\Dice_and_Data.csprojResolveAssemblyReference.cache
