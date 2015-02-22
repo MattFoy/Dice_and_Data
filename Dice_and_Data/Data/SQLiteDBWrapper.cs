@@ -96,7 +96,7 @@ namespace Dice_and_Data.Data
             ExecuteReader();
             if (reader.HasRows && reader.Read())
             {
-                return new RollPartial(Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
+                return new RollPartial(reader["pattern"].ToString(), Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
                     Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
             }
             else
@@ -108,7 +108,7 @@ namespace Dice_and_Data.Data
                     return CheckCache(Int32.Parse(split[1]), Int32.Parse(split[0]));
                 }
                 
-                return new RollPartial(0, 0, 0, 0, "", 0);
+                return new RollPartial("", 0, 0, 0, 0, "", 0);
             }
         }
 
@@ -118,13 +118,56 @@ namespace Dice_and_Data.Data
             ExecuteReader();
             if (reader.HasRows && reader.Read())
             {
-                return new RollPartial(Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
+                return new RollPartial(reader["diceCount"].ToString() + reader["diceSides"].ToString(), Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
                     Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
             }
             else
             {
-                return new RollPartial(0, 0, 0, 0, "", 0);
+                return new RollPartial("", 0, 0, 0, 0, "", 0);
             }
+        }
+
+        public bool VerifyCacheIntegrity()
+        {
+            int singlesChecked = 0;
+            sql = "SELECT * FROM SingleProbabilityDistributions;";
+            ExecuteReader();
+            while (reader.HasRows && reader.Read())
+            {
+                singlesChecked++;
+                RollPartial rp = new RollPartial(reader["diceCount"].ToString() + reader["diceSides"].ToString(), Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()),
+                    Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
+                if (!rp.IsValid())
+                {
+                    System.Diagnostics.Trace.WriteLine("Invalid RollPartial for " + rp.pattern);
+                    return false;
+                }
+                else
+                {
+                    System.Diagnostics.Trace.WriteLine("Valid RollPartial for " + rp.pattern);
+                }
+            }
+
+            int compositesChecked = 0;
+            sql = "SELECT * FROM CompositeProbabilityDistributions;";
+            ExecuteReader();
+            while (reader.HasRows && reader.Read())
+            {
+                compositesChecked++;
+                RollPartial rp = new RollPartial(reader["pattern"].ToString(), Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()),
+                    Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
+                if (!rp.IsValid())
+                {
+                    System.Diagnostics.Trace.WriteLine("Invalid RollPartial for " + rp.pattern);
+                    return false;
+                }
+                else
+                {
+                    System.Diagnostics.Trace.WriteLine("Valid RollPartial for " + rp.pattern);
+                }
+            }
+            System.Diagnostics.Trace.WriteLine("[CACHE VALID!] Checked " + singlesChecked + " single dice patterns and " + compositesChecked + " composite patterns.");
+            return true;
         }
 
         public void CacheRollPlan(int diceCount, int diceSides, int min, int max, double mean, double stdDev, String pTableJSON, long calcTime)

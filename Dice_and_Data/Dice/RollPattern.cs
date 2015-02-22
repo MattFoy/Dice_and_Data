@@ -200,9 +200,21 @@ namespace Dice_and_Data
                 //Trace.WriteLine("whoa!");
                 timer.Stop();
                 calcTime = timer.ElapsedMilliseconds;
-                CacheResults();
-            }
-            
+
+                double pTotal = 0.0;
+                for (int i = min; i <= max; i++)
+                {
+                    pTotal += pTable[i];
+                }
+                if (Math.Abs(1 - pTotal) < 0.01)
+                {
+                    CacheResults();
+                }
+                else
+                {
+                    // invalid ptable. :(
+                }     
+            }            
         }        
 
         public static String ValidatePattern(String pattern)

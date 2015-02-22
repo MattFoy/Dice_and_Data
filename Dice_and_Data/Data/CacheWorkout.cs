@@ -83,5 +83,91 @@ namespace Dice_and_Data.Data
             }
 
         }
+
+        public static void Work2()
+        {
+            String[] dice = new String[] { "d4", "d6", "d8", "d10", "d12", "d20" };
+            int [] diceBounds = Enumerable.Repeat(0, dice.Length).ToArray();
+            
+            // Step 1: Calculate diceBounds.
+            for (int i = 0; i < dice.Length; i++)
+            {
+                for(int j = 2; j <= 20; j++)
+                {
+                    RollPattern rp = new RollPattern(j + dice[i]);
+                    double pSum = 0;
+                    for (int k = rp.Min; k <= rp.Max; k++)
+                    {
+                        pSum += rp.p(k);
+                    }
+                    if (Math.Abs(1 - pSum) < 0.01)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        diceBounds[i] = j;
+                        break;
+                    }
+                }                
+            }
+
+            //Step 2:
+            int[] itr = Enumerable.Repeat(0, dice.Length).ToArray();
+            long tested = 0;
+            int added = 0;
+            while (true)
+            {
+                //Step 2.1: Increment the itr array
+                bool carry = true;
+                for (int i = 0; i < itr.Length; i++)
+                {
+                    if (carry)
+                    {
+                        if (++itr[i] % diceBounds[i] == 0)
+                        {
+                            if (i == dice.Length - 1) 
+                            { 
+                                return; 
+                            }
+                            else
+                            {
+                                itr[i] = 0;
+                                carry = true;
+                            }
+                        }
+                        else
+                        {
+                            carry = false;
+                        }                        
+                    }
+                }
+
+                String pattern = "";
+                for (int i = 0; i < itr.Length; i++)
+                {
+                    if (itr[i] > 0)
+                    {
+                        pattern += itr[i] + dice[i] + "+";
+                    }
+                }
+                pattern = pattern.TrimEnd(new char[] { '+' });
+                String status;
+                if (!SQLiteDBWrapper.getReference().CheckCache(pattern).IsValid())
+                {
+                    status = "Adding:";
+                    added++;
+                    RollPattern rpTest = new RollPattern(pattern);
+                }
+                else
+                {
+                    status = "ABORTING:";
+                    tested++;
+                }
+
+                System.Diagnostics.Trace.WriteLine("[" + added + " / " + tested + "] " + status + " " + pattern);
+
+            }
+        }
     }
 }

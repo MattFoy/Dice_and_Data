@@ -53,7 +53,10 @@ namespace Dice_and_Data
 
             Application.Current.Shutdown();
              * */
-            Data.CacheWorkout.Work();
+            
+            Data.CacheWorkout.Work2();
+
+            //Data.SQLiteDBWrapper.getReference().VerifyCacheIntegrity();
         }
 
         

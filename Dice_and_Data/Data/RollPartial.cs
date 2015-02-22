@@ -8,6 +8,7 @@ namespace Dice_and_Data.Data
 {
     class RollPartial
     {
+        public String pattern;
         public int min;
         public int max;
         public double mean;
@@ -15,8 +16,9 @@ namespace Dice_and_Data.Data
         public Dictionary<int, double> pTable;
         public long calcTime;
 
-        public RollPartial(int min, int max, double mean, double stdDev, String pTableJSON, long calcTime)
+        public RollPartial(String pattern, int min, int max, double mean, double stdDev, String pTableJSON, long calcTime)
         {
+            this.pattern = pattern;
             this.min = min;
             this.max = max;
             this.mean = mean;
