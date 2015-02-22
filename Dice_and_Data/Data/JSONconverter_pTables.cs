@@ -27,9 +27,15 @@ namespace Dice_and_Data.Data
         public static Dictionary<int, double> JSON2Dict(String json)
         {
             Dictionary<int, double> result = new Dictionary<int, double>();
+            System.Diagnostics.Trace.WriteLine("Attempting to parse: " + json);
+
             //Trim any whitespace
             json = json.Trim();
 
+            if (json.Length < 3)
+            {
+                return new Dictionary<int,double>();
+            }
             //Trim the leading and trailing brackets
             json = json.Substring(1, json.Length - 2);
 
@@ -45,7 +51,7 @@ namespace Dice_and_Data.Data
                 s = s.Substring(1, s.Length - 2);
 
                 String[] kvp = s.Split(new Char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
-                int key = Int32.Parse(kvp[0]);
+                int key = Int16.Parse(kvp[0]);
                 double value = Double.Parse(kvp[1]);
                 result.Add(key, value);
             }

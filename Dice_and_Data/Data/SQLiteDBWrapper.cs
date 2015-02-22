@@ -70,6 +70,83 @@ namespace Dice_and_Data.Data
             SessionID = sessionRow.Key;
         }
 
+        public void CacheRollPattern(String pattern, int min, int max, double mean, double stdDev, String pTableJSON, long calcTime)
+        {
+            sql = "SELECT 1 FROM CompositeProbabilityDistributions WHERE pattern = '" + pattern + "';";
+            ExecuteReader();
+            if (reader.HasRows)
+            {
+                sql = "UPDATE CompositeProbabilityDistributions SET "
+                    + "min = " + min + ", max = " + max + ", mean = " 
+                    + mean + ", stdDev = " + stdDev + ", pTable = '" + pTableJSON + "', calcTime = " + calcTime
+                    + " WHERE pattern = '" + pattern + "';";
+                ExecuteNonQuery();
+            }
+            else
+            {
+                sql = "INSERT INTO CompositeProbabilityDistributions (pattern, min, max, mean, stdDev, pTable, calcTime) VALUES ('"
+                    + pattern + "', " + min + ", " + max + ", " + mean + ", " + stdDev + ", '" + pTableJSON + "', " + calcTime + ");";
+                ExecuteNonQuery();
+            }
+        }
+
+        public RollPartial CheckCache(String pattern)
+        {
+            sql = "SELECT * FROM CompositeProbabilityDistributions WHERE pattern = '" + pattern + "';";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                return new RollPartial(Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
+                    Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
+            }
+            else
+            {
+                System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("^[0-9]+d[0-9]+$");
+                if (regex.IsMatch(pattern))
+                {
+                    String[] split = pattern.Split(new char[] { 'd' }, StringSplitOptions.RemoveEmptyEntries);
+                    return CheckCache(Int32.Parse(split[1]), Int32.Parse(split[0]));
+                }
+                
+                return new RollPartial(0, 0, 0, 0, "", 0);
+            }
+        }
+
+        public RollPartial CheckCache(int diceSides, int diceCount)
+        {
+            sql = "SELECT * FROM SingleProbabilityDistributions WHERE diceSides = " + diceSides + " AND diceCount = " + diceCount + ";";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                return new RollPartial(Int32.Parse(reader["min"].ToString()), Int32.Parse(reader["max"].ToString()), Double.Parse(reader["mean"].ToString()), 
+                    Double.Parse(reader["stdDev"].ToString()), reader["pTable"].ToString(), Int64.Parse(reader["calcTime"].ToString()));
+            }
+            else
+            {
+                return new RollPartial(0, 0, 0, 0, "", 0);
+            }
+        }
+
+        public void CacheRollPlan(int diceCount, int diceSides, int min, int max, double mean, double stdDev, String pTableJSON, long calcTime)
+        {
+            sql = "SELECT 1 FROM SingleProbabilityDistributions WHERE diceSides = " + diceSides + " AND diceCount = " + diceCount + ";";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                sql = "UPDATE SingleProbabilityDistributions SET "
+                    + "min = " + min + ", max = " + max + ", mean = "
+                    + mean + ", stdDev = " + stdDev + ", pTable = '" + pTableJSON + "', calcTime = " + calcTime
+                    + " WHERE diceSides = " + diceSides + " AND diceCount = " + diceCount + ";";
+                ExecuteNonQuery();
+            }
+            else
+            {
+                sql = "INSERT INTO SingleProbabilityDistributions (diceSides, diceCount, min, max, mean, stdDev, pTable, calcTime) VALUES ('"
+                    + diceSides + "', " + diceCount + ", " + min + ", " + max + ", " + mean + ", " + stdDev + ", '" + pTableJSON + "', " + calcTime + ");";
+                ExecuteNonQuery();
+            }
+        }
+
         private int ExecuteNonQuery()
         {
             command = new SQLiteCommand(sql, connection);
@@ -85,22 +162,30 @@ namespace Dice_and_Data.Data
         //Singleton insures this runs once and only once.
         private SQLiteDBWrapper()
         {
-            if (!System.IO.File.Exists("RollTracker.sqlite"))
+            if (System.IO.File.Exists("db.sqlite"))
             {
-                SQLiteConnection.CreateFile("RollTracker.sqlite");
+                //System.IO.File.Delete("db.sqlite"); // for testing
+            }
+            
+            if (!System.IO.File.Exists("db.sqlite"))
+            {// CREATE IF NOT EXISTS the file!                
+                SQLiteConnection.CreateFile("db.sqlite");
                 Trace.WriteLine("SQLite File created.");
             }
-            connection = new SQLiteConnection("Data Source=RollTracker.sqlite;Version=3;");
+            connection = new SQLiteConnection("Data Source=db.sqlite;Version=3;");
             connection.Open();
             System.Diagnostics.Trace.WriteLine("Connection opened");
-
-            //sql = "DROP TABLE IF EXISTS RollHistory; DROP TABLE IF EXISTS Sessions;";
-            //ExecuteNonQuery();
 
             sql = "CREATE TABLE IF NOT EXISTS RollHistory (id INTEGER PRIMARY KEY, diceCode VARCHAR(20), value INT, session_id INT)";
             ExecuteNonQuery();
 
             sql = "CREATE TABLE IF NOT EXISTS Sessions (id INTEGER PRIMARY KEY, name VARCHAR(20))";
+            ExecuteNonQuery();
+
+            sql = "CREATE TABLE IF NOT EXISTS CompositeProbabilityDistributions (id INTEGER PRIMARY KEY, pattern VARCHAR(30), min INT, max INT, mean REAL, stdDev REAL, pTable TEXT, calcTime INT)";
+            ExecuteNonQuery();
+
+            sql = "CREATE TABLE IF NOT EXISTS SingleProbabilityDistributions (id INTEGER PRIMARY KEY, diceCount INT, diceSides INT, min INT, max INT, mean REAL, stdDev REAL, pTable TEXT, calcTime INT)";
             ExecuteNonQuery();
 
             String sessionName = System.DateTime.Now.ToString("yyyy/M/d HH:mm") + " Dice Session";

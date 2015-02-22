@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 using Dice_and_Data.Dice;
 using Dice_and_Data.Data;
 
@@ -23,8 +24,8 @@ namespace Dice_and_Data
         private double variance = 0;
         public double Variance { get { return variance; } set { } }
         public double StandardDeviation { get { return Math.Sqrt(variance); } set { } }
-        private long msTime = 0;
-        public long MsTime { get { return msTime; } set { } }
+        private long calcTime = 0;
+        public long CalcTime { get { return calcTime; } set { } }
 
         private Dictionary<int, double> pTable;
 
@@ -36,7 +37,7 @@ namespace Dice_and_Data
 
             if (rollString.Length > 0)
             {
-                System.Diagnostics.Trace.WriteLine(rollString + " is good!");
+                Trace.WriteLine(rollString + " is good!");
                 //matches the "1d4" type strings
                 Regex regex = new Regex("^([0-9]+d[0-9]+)$");
                 String[] explode = rollString.Split(new char[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
@@ -70,12 +71,12 @@ namespace Dice_and_Data
                         constant += Int32.Parse(s);
                     }
                 }
-                this.patternString = this.ToString();
+                this.patternString = this.ToString(true);
                 GenerateProbabilityDistribution();
             }
             else
             {
-                System.Diagnostics.Trace.WriteLine(rollString + " is BAD!");
+                Trace.WriteLine(rollString + " is BAD!");
                 throw new DicePatternFormatException("Invalid dice pattern format.");
             }
         }
@@ -104,87 +105,104 @@ namespace Dice_and_Data
         }
 
         private void GenerateProbabilityDistribution()
-        {
-            // (re)Initialize the table
-            System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
-            timer.Start();
-
-            pTable = new Dictionary<int, double>(); 
-            
-            if (rolls.Count == 0)
+        {            
+            RollPartial partial = SQLiteDBWrapper.getReference().CheckCache(this.ToString(false));
+            if (partial.IsValid())
             {
-                // It's just a constant?
+                Trace.WriteLine("Cache HIT! Loading combined probability distribution now...");
+                this.pTable = partial.pTable;
+                this.variance = Math.Pow(partial.stdDev, 2);
+                this.min = partial.min;
+                this.max = partial.max;
+                this.mean = partial.mean;
+                this.calcTime = partial.calcTime;
+                
             }
-            else if (rolls.Count == 1)
+            else
             {
-                //Not a strictly necessary if block, but there's no need to do the whole algorithm on such a simple case
-                for (int i = min; i <= max; i++)
+                Trace.WriteLine("Cache miss! Generating combined probability distribution now...");
+                Stopwatch timer = new Stopwatch();
+                timer.Start();
+
+                // (re)Initialize the table
+                pTable = new Dictionary<int, double>(); 
+
+                if (rolls.Count == 0)
                 {
-                    pTable.Add(i, rolls[0].p(i));
+                    // It's just a constant?
                 }
-                mean = rolls[0].E();
-            }
-            else 
-            {
-                //TODO: work some magic to get around the ridiculous performance issues caused by n-ary cartesian products
-                // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
-                // (Also calculate the mean while we're traversing this collection)
-                List<List<KeyValuePair<int,double>>> sets = new List<List<KeyValuePair<int,double>>>();
-                double avgSum = 0;
-                foreach (RollPlan rp in rolls)
+                else if (rolls.Count == 1)
                 {
-                    avgSum += rp.E();
-                    List<KeyValuePair<int, double>> possibilities = new List<KeyValuePair<int, double>>();
-                    for (int k = rp.min; k <= rp.max; k++)
-                    {                            
-                        possibilities.Add(new KeyValuePair<int, double>(k, rp.p(k)));
-                    }
-                    sets.Add(possibilities);                    
-                }
-                mean = avgSum;
-
-                // Step 2: Generate the cartesian product of these sets with LINQ magic
-                IEnumerable<IEnumerable<KeyValuePair<int,double>>> result = sets
-                    .Select(list => list.AsEnumerable())
-                    .CartesianProduct();
-
-
-                // Step 3: Create an array to store combination totals
-                double[] partialProbabilities = Enumerable.Repeat(0.0, max - min + 1).ToArray();
-
-                foreach (IEnumerable<KeyValuePair<int, double>> topLvl in result)
-                {
-                    int currentSum = 0;
-                    double currentP = 1;
-                    foreach (KeyValuePair<int, double> kvp in topLvl)
+                    //Not a strictly necessary if block, but there's no need to do the whole algorithm on such a simple case
+                    for (int i = min; i <= max; i++)
                     {
-                        //System.Diagnostics.Trace.Write(kvp + ", ");
-                        currentSum += kvp.Key;
-                        currentP *= kvp.Value;
+                        pTable.Add(i, rolls[0].p(i));
                     }
-                    //System.Diagnostics.Trace.WriteLine("");
-                    partialProbabilities[(currentSum - min)] += currentP;
+                    mean = rolls[0].E();
+                }
+                else
+                {
+                    //TODO: work some magic to get around the ridiculous performance issues caused by n-ary cartesian products
+                    // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
+                    // (Also calculate the mean while we're traversing this collection)
+                    List<List<KeyValuePair<int, double>>> sets = new List<List<KeyValuePair<int, double>>>();
+                    double avgSum = 0;
+                    foreach (RollPlan rp in rolls)
+                    {
+                        avgSum += rp.E();
+                        List<KeyValuePair<int, double>> possibilities = new List<KeyValuePair<int, double>>();
+                        for (int k = rp.min; k <= rp.max; k++)
+                        {
+                            possibilities.Add(new KeyValuePair<int, double>(k, rp.p(k)));
+                        }
+                        sets.Add(possibilities);
+                    }
+                    mean = avgSum;
+
+                    // Step 2: Generate the cartesian product of these sets with LINQ magic
+                    IEnumerable<IEnumerable<KeyValuePair<int, double>>> result = sets
+                        .Select(list => list.AsEnumerable())
+                        .CartesianProduct();
+
+
+                    // Step 3: Create an array to store combination totals
+                    double[] partialProbabilities = Enumerable.Repeat(0.0, max - min + 1).ToArray();
+
+                    foreach (IEnumerable<KeyValuePair<int, double>> topLvl in result)
+                    {
+                        int currentSum = 0;
+                        double currentP = 1;
+                        foreach (KeyValuePair<int, double> kvp in topLvl)
+                        {
+                            //Trace.Write(kvp + ", ");
+                            currentSum += kvp.Key;
+                            currentP *= kvp.Value;
+                        }
+                        //Trace.WriteLine("");
+                        partialProbabilities[(currentSum - min)] += currentP;
+                    }
+
+                    // Step 4: Calculate how many possibilities each value weighs relative to the total number.
+                    for (int i = 0; i < partialProbabilities.Length; i++)
+                    {
+                        pTable.Add(i + min, partialProbabilities[i]);
+                    }
                 }
 
-                // Step 4: Calculate how many possibilities each value weighs relative to the total number.
-                for (int i = 0; i < partialProbabilities.Length; i++)
+
+                // Step 5: Calculate the variance using the forumla  SUM(i=min;i<=max): (xi - mean)^2 * p(xi)
+                // (Credit to http://www.stat.yale.edu/Courses/1997-98/101/rvmnvar.htm)
+                variance = 0;
+                foreach (KeyValuePair<int, double> entry in pTable)
                 {
-                    pTable.Add(i + min, partialProbabilities[i]);
+                    variance += Math.Pow(entry.Key - mean, 2) * entry.Value;
                 }
+                //Trace.WriteLine("whoa!");
+                timer.Stop();
+                calcTime = timer.ElapsedMilliseconds;
+                CacheResults();
             }
             
-
-            // Step 5: Calculate the variance using the forumla  SUM(i=min;i<=max): (xi - mean)^2 * p(xi)
-            // (Credit to http://www.stat.yale.edu/Courses/1997-98/101/rvmnvar.htm)
-            variance = 0;
-            foreach (KeyValuePair<int, double> entry in pTable)
-            {
-                variance += Math.Pow(entry.Key - mean, 2) * entry.Value;
-            }
-            //System.Diagnostics.Trace.WriteLine("whoa!");
-            timer.Stop();
-            msTime = timer.ElapsedMilliseconds;
-            CacheResults();
         }        
 
         public static String ValidatePattern(String pattern)
@@ -195,11 +213,14 @@ namespace Dice_and_Data
             // Replaces all whitespace characters with nothing; thereby removing them.
             pattern = regex.Replace(pattern, "");
 
+            pattern = pattern.Replace("-", "+-");
+            //pattern = pattern.Replace("- ", "-");
+
             // Forces all uppercase letters to lowercase
             pattern = pattern.ToLower();
 
             //matches "1d4", "1d4+3", "2d4+3d5", "2d4+3+5d6+8+1d3", etc
-            regex = new Regex(@"^(([0-9]+d[0-9]+)|([0-9]+))(\+(([0-9]+d[0-9]+)|([0-9]+)))*$");
+            regex = new Regex(@"^(([1-9][0-9]*d[0-9]+)|([1-9][0-9]*))(\+(([1-9][0-9]*d[0-9]+)|((-[1-9]|[1-9])[0-9]*)))*$");
 
             if (regex.IsMatch(pattern))
             { 
@@ -211,7 +232,12 @@ namespace Dice_and_Data
             }
         }
 
-        public override String ToString()
+        public override string ToString()
+        {
+            return base.ToString();
+        }
+
+        public String ToString(Boolean withConstant)
         {
             StringBuilder sb = new StringBuilder();
             String res = "";
@@ -222,7 +248,7 @@ namespace Dice_and_Data
             {
                 sb.Remove(sb.Length - 1, 1);
             }
-            if (constant != 0)
+            if (withConstant && constant != 0)
             {
                 if (constant > 0)
                 {
@@ -240,12 +266,18 @@ namespace Dice_and_Data
 
         private void CacheResults()
         {
+            SQLiteDBWrapper db = SQLiteDBWrapper.getReference();
+
+            db.CacheRollPattern(this.ToString(false), min, max, mean, StandardDeviation, JSONconverter_pTables.Dict2JSON(pTable), calcTime);
+            Trace.WriteLine(this.ToString(false) + " cached in SQLite database.");
+            /*
             String json1 = JSONconverter_pTables.Dict2JSON(pTable);
-            System.Diagnostics.Trace.WriteLine(json1);
+            Trace.WriteLine(json1);
             Dictionary<int, double> pTable2 = JSONconverter_pTables.JSON2Dict(json1);
             String json2 = JSONconverter_pTables.Dict2JSON(pTable);
-            System.Diagnostics.Trace.WriteLine(json2);
-            System.Diagnostics.Trace.WriteLine((json1 == json2) ? "Same!" : "Diff!");
+            Trace.WriteLine(json2);
+            Trace.WriteLine((json1 == json2) ? "Same!" : "Diff!");
+             * */
         }
     }
 }

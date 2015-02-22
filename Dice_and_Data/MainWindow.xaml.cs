@@ -23,7 +23,7 @@ namespace Dice_and_Data
         public MainWindow()
         {
             InitializeComponent();
-
+            Data.SQLiteDBWrapper.getReference();
             // Individual overflow break downs:
             // d2: 25->26
             // d3: 17->18
@@ -37,10 +37,9 @@ namespace Dice_and_Data
             // d20: 7-> 8
             // Inverse logarithmic function... booo
             // doesn't break down as long as you keep each die under it's limit... so 14d4 + 11d6 + 10d8 + 9d10 works, albeit a bit slowly
-
+            /*
             Double sum = 0;
-
-            RollPattern rp1 = new RollPattern("2d4 + 5d6 + 3d8"); //"14d4 + 11d6 + 10d8 + 9d10");
+            RollPattern rp1 = new RollPattern("3d8 - 5"); //"14d4 + 11d6 + 10d8 + 9d10");
             for (int i = rp1.Min; i <= rp1.Max; i++)
             {
                 sum += rp1.p(i);
@@ -49,10 +48,14 @@ namespace Dice_and_Data
             System.Diagnostics.Trace.WriteLine("Sum = " + sum.ToString());
             System.Diagnostics.Trace.WriteLine("Average = " + rp1.Mean);
             System.Diagnostics.Trace.WriteLine("StdDev = " + rp1.StandardDeviation);
-            System.Diagnostics.Trace.WriteLine("Pattern = " + rp1.ToString());
-            System.Diagnostics.Trace.WriteLine("MsTime = "+ rp1.MsTime + "ms");
+            System.Diagnostics.Trace.WriteLine("Pattern = " + rp1.ToString(true));
+            System.Diagnostics.Trace.WriteLine("CalcTime = "+ rp1.CalcTime + "ms");
 
             Application.Current.Shutdown();
+             * */
+            Data.CacheWorkout.Work();
         }
+
+        
     }
 }

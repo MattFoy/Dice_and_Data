@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dice_and_Data.Dice;
+using Dice_and_Data.Data;
 
 namespace Dice_and_Data
 {
@@ -16,11 +17,11 @@ namespace Dice_and_Data
         public int max;
         public int pDenominator;
 
+        private long calcTime;
         private Dictionary<int, double> pTable;
 
         public RollPlan(int diceCount, int sides)
-        {
-            
+        {            
             this.diceCount = diceCount;
             this.sides = sides;
 
@@ -31,7 +32,37 @@ namespace Dice_and_Data
             min = diceCount;
             max = diceCount * sides;
             pDenominator = (int)Math.Pow(sides, diceCount);
-            pTable = new Dictionary<int, double>();
+
+            RollPartial partial = SQLiteDBWrapper.getReference().CheckCache(sides, diceCount);
+            if (partial.IsValid())
+            {
+                System.Diagnostics.Trace.WriteLine("Cache HIT! Loading probability distribution now...");
+                pTable = partial.pTable;
+                calcTime = partial.calcTime;
+                System.Diagnostics.Trace.WriteLine("Loaded pTable from SQLite database: " + diceCount + "d" + sides);
+            }
+            else
+            {
+                System.Diagnostics.Trace.WriteLine("Cache miss! Building probability distribution now...");
+                System.Diagnostics.Stopwatch timer = new System.Diagnostics.Stopwatch();
+                timer.Start();
+                pTable = new Dictionary<int, double>();
+                double pTotal = 0.0;
+                for (int i = min; i <= max; i++)
+                {
+                    pTotal += p(i);
+                }
+                timer.Stop();
+                this.calcTime = timer.ElapsedMilliseconds;
+                if (Math.Abs(1 - pTotal) < 0.02)
+                {
+                    CacheResults();
+                }
+                else
+                {
+
+                }
+            }            
         }
 
         public double p(int x)
@@ -47,7 +78,9 @@ namespace Dice_and_Data
                 {
                     int newX = (max - x) + min;
                     //System.Diagnostics.Trace.WriteLine("x:(" + x + "->" + newX + "), min: " + min + ", max: " + max + ", middle: " + middleMark);
-                    return p(newX);
+                    double r = p(newX);
+                    pTable.Add(x, r);
+                    return r;
                 }
                 else
                 {
@@ -89,6 +122,13 @@ namespace Dice_and_Data
                 sum += Roll.d(sides);
             }
             return sum;
+        }
+
+        private void CacheResults()
+        {
+            SQLiteDBWrapper db = SQLiteDBWrapper.getReference();
+            db.CacheRollPlan(diceCount, sides, min, max, E(), stdDev(), JSONconverter_pTables.Dict2JSON(pTable), calcTime);
+            System.Diagnostics.Trace.WriteLine(this.ToString() + " cached in SQLite database.");
         }
     }
 }
