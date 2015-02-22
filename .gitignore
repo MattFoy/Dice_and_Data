@@ -44,3 +44,5 @@ Temporary Items
 
 # The sqlite database, since it's currently at 50MB of pre-computed probability distributions...
 *.sqlite
+Dice_and_Data/bin/Debug/db.sqlite
+Dice_and_Data/bin/Release/db.sqlite
