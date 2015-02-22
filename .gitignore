@@ -1,5 +1,5 @@
 # Windows image file caches
-Thumbs.db
+[Tt]humbs.db
 ehthumbs.db
 
 # Folder config file
@@ -29,7 +29,7 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Thumbnails
-._*
+._* 
 
 # Files that might appear on external disk
 .Spotlight-V100
@@ -44,5 +44,19 @@ Temporary Items
 
 # The sqlite database, since it's currently at 50MB of pre-computed probability distributions...
 *.sqlite
-Dice_and_Data/bin/Debug/db.sqlite
-Dice_and_Data/bin/Release/db.sqlite
+
+#Visual Studio files
+[Oo]bj
+[Bb]in
+*.user
+*.suo
+*.[Cc]ache
+*.bak
+*.ncb
+*.log
+_ReSharper.*
+*.resharper
+Ankh.NoLoad
+[Bb]in
+[Dd]ebug*/
+[Rr]elease*/
