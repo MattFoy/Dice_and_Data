@@ -54,9 +54,15 @@ namespace Dice_and_Data
             Application.Current.Shutdown();
              * */
             
-            Data.CacheWorkout.Work2();
+            Data.CacheWorkout.Start();
+            
 
             //Data.SQLiteDBWrapper.getReference().VerifyCacheIntegrity();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Data.CacheWorkout.Stop();
         }
 
         

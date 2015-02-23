@@ -14,7 +14,7 @@ namespace Dice_and_Data.Data
 
         public static void Start() {
             stopRequested = false;
-            worker = new System.Threading.Thread(Work);
+            worker = new System.Threading.Thread(Work2);
             worker.Start();
         }
         public static void Stop()
@@ -116,7 +116,7 @@ namespace Dice_and_Data.Data
             int[] itr = Enumerable.Repeat(0, dice.Length).ToArray();
             long tested = 0;
             int added = 0;
-            while (true)
+            while (!stopRequested)
             {
                 //Step 2.1: Increment the itr array
                 bool carry = true;
