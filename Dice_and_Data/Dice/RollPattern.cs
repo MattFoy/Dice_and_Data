@@ -71,6 +71,7 @@ namespace Dice_and_Data
                         constant += Int32.Parse(s);
                     }
                 }
+                rolls = rolls.OrderBy(r => r.sides).ToList();
                 this.patternString = this.ToString(true);
                 GenerateProbabilityDistribution();
             }
@@ -109,7 +110,7 @@ namespace Dice_and_Data
             RollPartial partial = SQLiteDBWrapper.getReference().CheckCache(this.ToString(false));
             if (partial.IsValid())
             {
-                Trace.WriteLine("Cache HIT! Loading combined probability distribution now...");
+                Trace.WriteLine("[" + this.ToString(false) + "] Cache HIT! Loading combined probability distribution now...");
                 this.pTable = partial.pTable;
                 this.variance = Math.Pow(partial.stdDev, 2);
                 this.min = partial.min;
@@ -120,7 +121,7 @@ namespace Dice_and_Data
             }
             else
             {
-                Trace.WriteLine("Cache miss! Generating combined probability distribution now...");
+                Trace.WriteLine("[" + this.ToString(false) + "] Cache miss! Generating combined probability distribution now...");
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
 
@@ -253,7 +254,8 @@ namespace Dice_and_Data
         {
             StringBuilder sb = new StringBuilder();
             String res = "";
-            foreach(RollPlan rp in rolls) {
+            foreach (RollPlan rp in rolls)
+            {
                 sb.Append(rp.diceCount).Append("d").Append(rp.sides).Append("+");
             }
             if (rolls.Count > 0)
