@@ -1,6 +1,7 @@
 ﻿<Window x:Class="Dice_and_Data.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        DataContext="{Binding self}"
         Title="MainWindow" Height="500" Width="525" MinWidth="400" MinHeight="350">
     <Grid>
         <Grid.RowDefinitions>
@@ -17,14 +18,14 @@
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0" Content="Dice Pattern:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-            <TextBox Grid.Row="0" Grid.Column="1" Margin="10" VerticalContentAlignment="Center">
+            <TextBox x:Name="DicePatternTxt" Grid.Row="0" Grid.Column="1" Margin="10" VerticalContentAlignment="Center">
                 <TextBox.Style>
                     <!-- http://stackoverflow.com/questions/7425618/how-can-i-add-a-hint-text-to-wpf-textbox/7433840#7433840 -->
                     <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
                         <Style.Resources>
                             <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
                                 <VisualBrush.Visual>
-                                    <Label Content='example "1d4 + 1d6 + 3" or "2d8"' Foreground="LightGray" />
+                                    <Label Content=' example "1d4 + 1d6 + 3" or "2d8"' Foreground="LightGray" />
                                 </VisualBrush.Visual>
                             </VisualBrush>
                         </Style.Resources>
@@ -43,10 +44,13 @@
                 </TextBox.Style>
             </TextBox>
             
-            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Margin="10" Padding="5">Reset Session</Button>
+            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Width="Auto">
+                <Label x:Name="Resultbox" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Black" 
+                       FontSize="16" Width="100" Background="#FFE2E2DB" Margin="5" ></Label>
+                <Button Margin="10" Padding="5" Click="ResetSession_Click">Reset Session</Button>
                 <Separator Width="50" Margin="5" />
-                <Button Margin="5" Padding="0" Width="130" FontWeight="Black" FontSize="18">R O L L</Button>
+                <Button x:Name="RollBtn" Margin="5" Padding="0" Width="130"
+                        FontWeight="Black" FontSize="18" Click="RollBtn_Click">R O L L</Button>
             </StackPanel>
             
         </Grid>

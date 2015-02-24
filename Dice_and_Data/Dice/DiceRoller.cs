@@ -20,7 +20,7 @@ namespace Dice_and_Data
         public static int d(int sides)
         {
             rollCount++;
-            return myRand.Next(1, sides);
+            return myRand.Next(1, sides+1);
         }
     }
 }

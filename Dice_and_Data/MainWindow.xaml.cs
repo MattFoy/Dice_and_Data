@@ -20,22 +20,64 @@ namespace Dice_and_Data
     /// </summary>
     public partial class MainWindow : Window
     {
-        RollPattern rp;
-        Display.CanvasDiceGraph graph;
+        DnDController controller;
+
+        //private delegate void NoArgDelegate();
         
         public MainWindow()
         {
             InitializeComponent();
-            Data.SQLiteDBWrapper.getReference();
+            ((TextBox)this.FindName("DicePatternTxt")).Text = Data.SQLiteDBWrapper.getReference().GetLastPattern();
+
+            controller = new DnDController((Canvas)this.FindName("DiceChart"));
+
+            controller.SetRollPattern(((TextBox)this.FindName("DicePatternTxt")).Text);
+
+            controller.DrawGraph();
 
             //rp = new RollPattern("2d8+1d4+1d6");
-            graph = new Display.CanvasDiceGraph((Canvas)this.FindName("DiceChart"));
+            
             //graph.SetRollPattern(rp);            
         }
 
         private void DiceChart_Loaded(object sender, RoutedEventArgs e)
         {
-            graph.Draw();
+            controller.DrawGraph();
+        }
+
+        private void RollBtn_Click(object sender, RoutedEventArgs e)
+        {
+            RollBtn.IsEnabled = false;
+            String pattern = DicePatternTxt.Text;
+            
+            //Create the worker thread to handle the execution
+            new System.Threading.Thread(() =>
+            {
+                Data.SQLiteDBWrapper.getReference().SetLastPattern(pattern);                
+                this.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (controller.SetRollPattern(pattern))
+                    {
+                        int result = controller.Roll();
+                        Resultbox.Content = result.ToString();
+                    }
+                }));
+            }).Start();
+
+            //Create a delayed thread to re-enable the roll button.
+            new System.Threading.Thread(() =>
+            {
+                System.Threading.Thread.Sleep(1000);
+                this.Dispatcher.BeginInvoke(new Action(() => {
+                    RollBtn.IsEnabled = true;
+                }));
+            }).Start();
+            //new NoArgDelegate(new Action(() => { thing(pattern); })).BeginInvoke(null, null);                 
+        }
+
+        private void ResetSession_Click(object sender, RoutedEventArgs e)
+        {
+            controller.ResetHistory();
         }        
     }
 }

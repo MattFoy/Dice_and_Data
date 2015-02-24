@@ -112,6 +112,7 @@
     </ApplicationDefinition>
     <Compile Include="Data\CacheWorkout.cs" />
     <Compile Include="Data\JSONconverter_pTables.cs" />
+    <Compile Include="Data\RollHistory.cs" />
     <Compile Include="Data\RollPartial.cs" />
     <Compile Include="Dice\AdvMath.cs" />
     <Compile Include="Dice\DicePatternFormatException.cs" />
@@ -127,7 +128,8 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Dice\DiceRoller.cs" />
-    <Compile Include="Display\WPF_Canvas2Graph.cs" />
+    <Compile Include="Display\CanvasDiceGraph.cs" />
+    <Compile Include="DnDController.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

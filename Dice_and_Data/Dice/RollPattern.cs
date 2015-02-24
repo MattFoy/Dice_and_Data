@@ -15,10 +15,11 @@ namespace Dice_and_Data
         private string patternString = "";
         private List<RollPlan> rolls = new List<RollPlan>();
         private int constant = 0;
+        public int Constant { get { return constant; } set { } }
         private int max = 0;
-        public int Max { get { return max; } set { } }
+        public int Max { get { return max + constant; } set { } }
         private int min = 0;
-        public int Min { get { return min; } set { } }
+        public int Min { get { return min + constant; } set { } }
         private double mean = 0;
         public double Mean { get { return mean + constant; } set { } }
         private double variance = 0;
@@ -26,6 +27,8 @@ namespace Dice_and_Data
         public double StandardDeviation { get { return Math.Sqrt(variance); } set { } }
         private long calcTime = 0;
         public long CalcTime { get { return calcTime; } set { } }
+        private bool validtable;
+        public bool ValidPTable { get { return validtable; } set { } }
 
         private Dictionary<int, double> pTable;
 
@@ -74,6 +77,7 @@ namespace Dice_and_Data
                 rolls = rolls.OrderBy(r => r.sides).ToList();
                 this.patternString = this.ToString(true);
                 GenerateProbabilityDistribution();
+                validtable = IsValidPTable();
             }
             else
             {
@@ -84,20 +88,20 @@ namespace Dice_and_Data
 
         public int run()
         {
-            int result = constant;
+            int result = 0;
             foreach (RollPlan rp in rolls)
             {
                 result += rp.execute();
             }
-            SQLiteDBWrapper.getReference().RecordRoll(this.ToString(), result);
-            return result;
+            SQLiteDBWrapper.getReference().RecordRoll(this.ToString(false), result);
+            return result+constant;
         }
 
         public double p(int x)
         {
-            if (pTable.ContainsKey(x))
+            if (pTable.ContainsKey(x-constant))
             {
-                return pTable[x];
+                return pTable[x - constant];
             }
             else
             {
@@ -202,21 +206,29 @@ namespace Dice_and_Data
                 timer.Stop();
                 calcTime = timer.ElapsedMilliseconds;
 
-                double pTotal = 0.0;
-                for (int i = min; i <= max; i++)
-                {
-                    pTotal += pTable[i];
-                }
-                if (Math.Abs(1 - pTotal) < 0.01)
+                if (IsValidPTable())
                 {
                     CacheResults();
-                }
-                else
-                {
-                    // invalid ptable. :(
-                }     
+                }   // else, invalid pTable. :(
             }            
-        }        
+        }
+
+        public Boolean IsValidPTable()
+        {
+            double pTotal = 0.0;
+            for (int i = min; i <= max; i++)
+            {
+                pTotal += pTable[i];
+            }
+            if (Math.Abs(1 - pTotal) < 0.01)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         public static String ValidatePattern(String pattern)
         {

@@ -22,30 +22,40 @@ namespace Dice_and_Data.Data
             return dbWrapRef;
         }
 
-        public Boolean RecordRoll(String rollKey, int result)
+        public bool RecordRoll(String pattern, int value)
         {
-            if (rollKey.Length == 0)
-            {
-                throw new Exception("Cannot record the roll. DicePattern invalid.");
-            }
-            sql = "INSERT INTO RollHistory (diceCode, value, session_id) VALUES ('" + rollKey + "', " + result + ", " + SessionID + ")";
+            sql = "INSERT INTO RollHistory (pattern, value, session_id) VALUES ('" + pattern + "', " + value + ", " + SessionID + ")";
             return ExecuteNonQuery() == 1;
         }
 
-        public int[] GetRollHistory(String pattern)
+        public Dictionary<string,RollHistory> GetRollHistory()
         {
-            List<int> results = new List<int>();
+            Dictionary<string, RollHistory> results = new Dictionary<string, RollHistory>();
 
-            sql = "SELECT value FROM RollHistory WHERE diceCode = '" + pattern + "' AND session_id = " + SessionID + ";";
+            sql = "SELECT pattern, value FROM RollHistory WHERE session_id = " + SessionID + ";";
             ExecuteReader();
             if (reader.HasRows)
             {
                 while (reader.Read())
                 {
-                    results.Add(Int32.Parse(reader["value"].ToString()));
+                    string pattern = reader["pattern"].ToString();
+                    int value = Int32.Parse(reader["value"].ToString());
+                    if (!results.ContainsKey(pattern))
+                    {
+                        results.Add(pattern, new RollHistory());
+                    }
+                    if (!results[pattern].ContainsKey(value))
+                    {
+                        results[pattern].Add(value, 1);
+                    }
+                    else
+                    {
+                        results[pattern][value]++;
+                    }
+
                 }
             }
-            return results.ToArray();
+            return results;
         }
 
         public List<KeyValuePair<int, string>> GetSessionList()
@@ -202,6 +212,59 @@ namespace Dice_and_Data.Data
             reader = command.ExecuteReader();
         }
 
+        private int GetLatestSession()
+        {
+            sql = "SELECT id FROM Sessions ORDER BY id DESC;";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                return Int16.Parse(reader["id"].ToString());
+            }
+            else
+            {
+                return NewSession();
+            }
+        }
+
+        public int NewSession()
+        {
+            String sessionName = System.DateTime.Now.ToString("yyyy/M/d HH:mm") + " Dice Session";
+            sql = "INSERT INTO Sessions (name) VALUES ('" + sessionName + "');";
+            ExecuteNonQuery();
+
+            sql = "SELECT id FROM Sessions WHERE name = '" + sessionName + "';";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                SessionID = Int32.Parse(reader["id"].ToString());
+                return SessionID;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public bool SetLastPattern(String pattern)
+        {
+            sql = "UPDATE Sessions SET lastPattern = '" + pattern + "' WHERE id = " + SessionID + ";";
+            return ExecuteNonQuery() == 1;
+        }
+
+        public string GetLastPattern()
+        {
+            sql = "SELECT lastPattern FROM Sessions WHERE id = " + SessionID + ";";
+            ExecuteReader();
+            if (reader.HasRows && reader.Read())
+            {
+                return reader["lastPattern"].ToString();
+            }
+            else
+            {
+                return "";
+            }
+        }
+
         //Singleton insures this runs once and only once.
         private SQLiteDBWrapper()
         {
@@ -219,31 +282,20 @@ namespace Dice_and_Data.Data
             connection.Open();
             System.Diagnostics.Trace.WriteLine("Connection opened");
 
-            sql = "CREATE TABLE IF NOT EXISTS RollHistory (id INTEGER PRIMARY KEY, diceCode VARCHAR(20), value INT, session_id INT)";
+            sql = "CREATE TABLE IF NOT EXISTS RollHistory (id INTEGER PRIMARY KEY, pattern TEXT, value INT, session_id INT)";
             ExecuteNonQuery();
 
-            sql = "CREATE TABLE IF NOT EXISTS Sessions (id INTEGER PRIMARY KEY, name VARCHAR(20))";
+            sql = "CREATE TABLE IF NOT EXISTS Sessions (id INTEGER PRIMARY KEY, name TEXT, lastPattern TEXT)";
             ExecuteNonQuery();
 
-            sql = "CREATE TABLE IF NOT EXISTS CompositeProbabilityDistributions (id INTEGER PRIMARY KEY, pattern VARCHAR(30), min INT, max INT, mean REAL, stdDev REAL, pTable TEXT, calcTime INT)";
+            sql = "CREATE TABLE IF NOT EXISTS CompositeProbabilityDistributions (id INTEGER PRIMARY KEY, pattern TEXT, min INT, max INT, mean REAL, stdDev REAL, pTable TEXT, calcTime INT)";
             ExecuteNonQuery();
 
             sql = "CREATE TABLE IF NOT EXISTS SingleProbabilityDistributions (id INTEGER PRIMARY KEY, diceCount INT, diceSides INT, min INT, max INT, mean REAL, stdDev REAL, pTable TEXT, calcTime INT)";
             ExecuteNonQuery();
 
-            String sessionName = System.DateTime.Now.ToString("yyyy/M/d HH:mm") + " Dice Session";
-            sql = "INSERT INTO Sessions (name) VALUES ('" + sessionName + "');";
-            ExecuteNonQuery();
-
-            sql = "SELECT id FROM Sessions WHERE name = '" + sessionName + "';";
-            ExecuteReader();
-            if (reader.HasRows)
-            {
-                while (reader.Read())
-                {
-                    SessionID = Int32.Parse(reader["id"].ToString());
-                }
-            }
+            SessionID = GetLatestSession();
+  
             Trace.WriteLine("SessionID: " + SessionID);
         }
     }
