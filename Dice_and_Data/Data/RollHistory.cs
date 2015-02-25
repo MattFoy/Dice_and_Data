@@ -67,8 +67,10 @@ namespace Dice_and_Data.Data
             double sum = 0.0;
             foreach (KeyValuePair<int, int> kvp in this)
             {
-                sum += p(kvp.Key) * Math.Pow(mean - kvp.Value, 2);
+                sum += kvp.Value * Math.Pow(mean - kvp.Key, 2);
             }
+            // We divide by the total number of rolls + 1 because this is not a exhaustive set, but a sample
+            sum /= Rolls() + 1;
             return Math.Sqrt(sum);
         }
     }

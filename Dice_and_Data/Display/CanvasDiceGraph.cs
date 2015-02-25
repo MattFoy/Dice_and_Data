@@ -108,6 +108,7 @@ namespace Dice_and_Data.Display
             Canvas.SetTop(theoreticalStats, 20);
             canvas.Children.Add(theoreticalStats);
             Label historicalStats = new Label();
+
             historicalStats.Content = "Mean: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].Mean()+rp.Constant)
                 + ", Standard Deviation: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].StandardDeviation()) + "\nHistorical";
             Canvas.SetRight(historicalStats, 5);
