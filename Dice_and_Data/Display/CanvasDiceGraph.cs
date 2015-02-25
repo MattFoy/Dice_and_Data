@@ -108,9 +108,39 @@ namespace Dice_and_Data.Display
             Canvas.SetTop(theoreticalStats, 20);
             canvas.Children.Add(theoreticalStats);
             Label historicalStats = new Label();
-
-            historicalStats.Content = "Mean: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].Mean()+rp.Constant)
-                + ", Standard Deviation: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].StandardDeviation()) + "\nHistorical";
+            String status = "(Status: ";
+            double hMean = rollHistory[rp.ToString(false)].Mean()+rp.Constant;
+            double hStdDev = rollHistory[rp.ToString(false)].StandardDeviation();
+            if (rp.Mean + rp.StandardDeviation < hMean - hStdDev)
+            {
+                status += "Extremely lucky!)";
+            }
+            else if (rp.Mean + rp.StandardDeviation < hMean)
+            {
+                status += "Very lucky!)";
+            }
+            else if (rp.Mean < hMean)
+            {
+                status += "Slightly lucky)";
+            }
+            else if (rp.Mean - rp.StandardDeviation > hMean + hStdDev)
+            {
+                status += "Extremely unlucky...)";
+            }
+            else if (rp.Mean - rp.StandardDeviation > hMean)
+            {
+                status += "Very unlucky...)";
+            }
+            else if (rp.Mean > hMean)
+            {
+                status += "Slightly unlucky)";
+            }
+            else
+            {
+                status += "Perfectly average)";
+            }
+            historicalStats.Content = "Mean: " + String.Format("{0:0.00}", hMean)
+                + ", Standard Deviation: " + String.Format("{0:0.00}", hStdDev) + "\nHistorical " + status;
             Canvas.SetRight(historicalStats, 5);
             Canvas.SetTop(historicalStats, 20);
             canvas.Children.Add(historicalStats);
