@@ -88,38 +88,67 @@ namespace Dice_and_Data.Display
             canvas.Children.Clear();
 
             //Set some relative variables for drawing.
-            double axisBuffer = 20;
+            double axisBuffer = 40;
             double xPtr = axisBuffer;
             double yPtr = Height - axisBuffer;            
-
-            // Draw horizontal axis:            
-            canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, yPtr).endPoint(xPtr + Width - (axisBuffer * 2), yPtr).Build());
-            canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, yPtr).endPoint(xPtr, axisBuffer).Build());
 
             if (rp == null) return;
             double historicalHighest = rollHistory[rp.ToString(false)].highestP();
             if (Double.IsNaN(historicalHighest)) { historicalHighest = 0.0; }
-            double verticalScale = 0.8 * (Height - (axisBuffer * 2)) / Math.Max(historicalHighest, this.Highest);
+            double highest = Math.Max(historicalHighest, this.Highest);
+            double verticalScale = 0.8 * (Height - (axisBuffer * 2)) / highest;
+            double marks = 10;
+            double vertIncrements = (highest / ((rollHistory[rp.ToString(false)].Rolls() == 1) ? 1 : 0.9)) / marks;
+            double vertChunkHeight = verticalScale * vertIncrements;
+
+            // Create some labels to throw stats on the screen
+            Label theoreticalStats = new Label();
+            theoreticalStats.Content = "Mean: " + rp.Mean + ", Standard Deviation: " + String.Format("{0:0.00}", rp.StandardDeviation) + "\nTheoretical";
+            Canvas.SetLeft(theoreticalStats, axisBuffer + 5);
+            Canvas.SetTop(theoreticalStats, 20);
+            canvas.Children.Add(theoreticalStats);
+            Label historicalStats = new Label();
+            historicalStats.Content = "Mean: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].Mean()+rp.Constant)
+                + ", Standard Deviation: " + String.Format("{0:0.00}", rollHistory[rp.ToString(false)].StandardDeviation()) + "\nHistorical";
+            Canvas.SetRight(historicalStats, 5);
+            Canvas.SetTop(historicalStats, 20);
+            canvas.Children.Add(historicalStats);
 
             // Calculate the width of each value on the canvas
             double chunkWidth = (Width - (axisBuffer * 2)) / (this.Points+1);
 
-            // Iterate through each roll value to draw elements.
+            // Draw the historical bar chart
             for (int i = rp.Min; i <= rp.Max; i++)
             {
                 //Draw the historical roll data:
-                BarBuilder bb = new BarBuilder(Brushes.ForestGreen)
-                    .setBottomLeft(xPtr + (chunkWidth / 2), axisBuffer)
-                    .setSize(chunkWidth, verticalScale * GetHistoricalP(i-rp.Constant));
-                canvas.Children.Add(bb.Build());
+                double p = GetHistoricalP(i - rp.Constant);
+                if (p > 0)
+                {
+                    BarBuilder bb = new BarBuilder(Brushes.Black)
+                        .setTopLeft(xPtr + (chunkWidth / 2), Height - axisBuffer - verticalScale * GetHistoricalP(i - rp.Constant))
+                        .setSize(chunkWidth, verticalScale * GetHistoricalP(i - rp.Constant));
+                    canvas.Children.Add(bb.Build());
+                    BarBuilder bb2 = new BarBuilder(Brushes.LightCyan)
+                        .setTopLeft(xPtr + (chunkWidth / 2) + 1, Height - axisBuffer - verticalScale * GetHistoricalP(i - rp.Constant))
+                        .setSize(chunkWidth - 1, verticalScale * GetHistoricalP(i - rp.Constant) - 1);
+                    canvas.Children.Add(bb2.Build());
+                }
+                xPtr += chunkWidth;
+                yPtr = Height - ((verticalScale * rp.p(i)) + axisBuffer);
+            }
 
+            // Draw the probability distribution
+            xPtr = axisBuffer;
+            yPtr = Height - axisBuffer;
+            for (int i = rp.Min; i <= rp.Max; i++)
+            {
                 //Draw the probabiltiy line segment
                 LineBuilder lb = new LineBuilder(Brushes.SteelBlue).startPoint(xPtr, yPtr);
                 xPtr += chunkWidth;
                 yPtr = Height - ((verticalScale * rp.p(i)) + axisBuffer);
                 if (rp.ValidPTable)
                 {
-                    lb.endPoint(xPtr, yPtr);
+                    lb.endPoint(xPtr, yPtr).thickness(3);
                     if (i != rp.Min)
                     {
                         canvas.Children.Add(lb.Build());
@@ -127,24 +156,67 @@ namespace Dice_and_Data.Display
 
                     //Draw a dot
                     Ellipse point = new Ellipse();
+                    Canvas.SetZIndex(point, 2);
                     point.Width = 4;
                     point.Height = 4;
                     point.Fill = Brushes.Black;
                     Canvas.SetLeft(point, xPtr - (point.Width / 2));
                     Canvas.SetTop(point, yPtr - (point.Height / 2));
                     canvas.Children.Add(point);
+                    
+                }               
+            }      
+            
+
+            // Label the horizontal axis
+            xPtr = axisBuffer;
+            yPtr = Height - axisBuffer;
+            int hMarkCounter = 0;
+            for (int i = rp.Min; i <= rp.Max; i++)
+            {
+                xPtr += chunkWidth;
+                yPtr = Height - ((verticalScale * rp.p(i)) + axisBuffer);
+
+                int hMarks = 10;
+                int derp = 1;
+                if (this.Points > hMarks)
+                {
+                    derp = (int)((double)this.Points / (double)hMarks);
                 }
 
-                //Draw a horizontal axis marker
-                canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, Height-axisBuffer+5).endPoint(xPtr, Height-axisBuffer-5).Build());
+                if (hMarkCounter++ % derp == 0) 
+                {
+                    //Draw a horizontal axis marker
+                    canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, Height - axisBuffer + 5).endPoint(xPtr, Height - axisBuffer - 5).Build());
 
-                //Draw a label for the axis marker
-                Label label = new Label();
-                label.Content = i.ToString();
-                label.Margin = new Thickness(xPtr - (10), Height - (axisBuffer), 0, 0);
-                canvas.Children.Add(label);
+                    //Draw a label for the axis marker
+                    Label label = new Label();
+                    label.Content = i.ToString();
+                    label.Margin = new Thickness(xPtr - (10), Height - (axisBuffer), 0, 0);
+                    canvas.Children.Add(label);
+                }
             }
 
+            xPtr = axisBuffer;
+            yPtr = Height - axisBuffer; 
+            //Label the vertical axis
+            for (int i = 1; i <= 10; i++)
+            {
+                Label yLab = new Label();
+                yPtr = (vertChunkHeight * i) + axisBuffer;
+                yLab.Content = String.Format("{0:0.0}", i * vertIncrements * 100);
+                Canvas.SetLeft(yLab, 2);
+                Canvas.SetTop(yLab, Height - yPtr - 14);
+                canvas.Children.Add(yLab);
+                canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr - 5, Height - yPtr).endPoint(xPtr + 5, Height - yPtr).Build());
+                //yPtr -= vertChunkHeight;
+            }
+
+            // Draw horizontal and vertical axis:   
+            xPtr = axisBuffer;
+            yPtr = Height - axisBuffer; 
+            canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, yPtr).endPoint(xPtr + Width - (axisBuffer * 2), yPtr).Build());
+            canvas.Children.Add(new LineBuilder(Brushes.Black).startPoint(xPtr, yPtr).endPoint(xPtr, axisBuffer).Build());
         }
 
         private class LineBuilder
@@ -156,7 +228,12 @@ namespace Dice_and_Data.Display
                 line.Stroke = color;
                 line.HorizontalAlignment = HorizontalAlignment.Left;
                 line.VerticalAlignment = VerticalAlignment.Center;
-                line.StrokeThickness = 1;
+                line.StrokeThickness = 2;
+            }
+            public LineBuilder thickness(double t)
+            {
+                line.StrokeThickness = t;
+                return this;
             }
             public LineBuilder startPoint(double x1, double y1)
             {
@@ -184,10 +261,10 @@ namespace Dice_and_Data.Display
                 rect = new Rectangle();
                 rect.Fill = color;
             }
-            public BarBuilder setBottomLeft(double left, double bottom)
+            public BarBuilder setTopLeft(double left, double top)
             {
                 Canvas.SetLeft(rect, left);
-                Canvas.SetBottom(rect, bottom);
+                Canvas.SetTop(rect, top);
                 return this;
             }
             public BarBuilder setSize(double width, double height)

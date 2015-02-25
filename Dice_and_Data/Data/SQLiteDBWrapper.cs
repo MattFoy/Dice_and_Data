@@ -232,7 +232,7 @@ namespace Dice_and_Data.Data
             sql = "INSERT INTO Sessions (name) VALUES ('" + sessionName + "');";
             ExecuteNonQuery();
 
-            sql = "SELECT id FROM Sessions WHERE name = '" + sessionName + "';";
+            sql = "SELECT id FROM Sessions WHERE name = '" + sessionName + "' ORDER BY id DESC;";
             ExecuteReader();
             if (reader.HasRows && reader.Read())
             {

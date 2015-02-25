@@ -23,6 +23,16 @@ namespace Dice_and_Data.Data
             return (iRolls/totalRolls);
         }
 
+        public int Rolls()
+        {
+            int rolls = 0;
+            foreach (KeyValuePair<int, int> kvp in this)
+            {
+                rolls += kvp.Value;
+            }
+            return rolls;
+        }
+
         public double highestP()
         {
             int maxValue = 0;
@@ -36,6 +46,30 @@ namespace Dice_and_Data.Data
                 }
             }
             return p(maxValuesKey);
+        }
+
+        public double Mean()
+        {
+            double sum = 0.0;
+            int total = 0;
+            foreach (KeyValuePair<int, int> kvp in this)
+            {
+                sum += kvp.Key * kvp.Value;
+                total += kvp.Value;
+            }
+            return sum / total;
+        }
+
+        public double StandardDeviation()
+        {
+            double mean = Mean();
+
+            double sum = 0.0;
+            foreach (KeyValuePair<int, int> kvp in this)
+            {
+                sum += p(kvp.Key) * Math.Pow(mean - kvp.Value, 2);
+            }
+            return Math.Sqrt(sum);
         }
     }
 }

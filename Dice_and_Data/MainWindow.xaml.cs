@@ -27,17 +27,13 @@ namespace Dice_and_Data
         public MainWindow()
         {
             InitializeComponent();
-            ((TextBox)this.FindName("DicePatternTxt")).Text = Data.SQLiteDBWrapper.getReference().GetLastPattern();
+            DicePatternTxt.Text = Data.SQLiteDBWrapper.getReference().GetLastPattern();
 
-            controller = new DnDController((Canvas)this.FindName("DiceChart"));
+            controller = new DnDController(DiceChart);
 
-            controller.SetRollPattern(((TextBox)this.FindName("DicePatternTxt")).Text);
+            controller.SetRollPattern(DicePatternTxt.Text);
 
-            controller.DrawGraph();
-
-            //rp = new RollPattern("2d8+1d4+1d6");
-            
-            //graph.SetRollPattern(rp);            
+            controller.DrawGraph();         
         }
 
         private void DiceChart_Loaded(object sender, RoutedEventArgs e)
