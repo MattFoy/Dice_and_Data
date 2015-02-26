@@ -59,5 +59,15 @@ namespace Dice_and_Data
             Data.SQLiteDBWrapper.getReference().NewSession();
             graph.LoadHistory();
         }
+
+        public double RollMean()
+        {
+            return rp.Mean;
+        }
+
+        public double RollStdDev()
+        {
+            return rp.StandardDeviation;
+        }
     }
 }

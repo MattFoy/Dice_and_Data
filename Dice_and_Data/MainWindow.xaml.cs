@@ -56,6 +56,26 @@ namespace Dice_and_Data
                     {
                         int result = controller.Roll();
                         Resultbox.Content = result.ToString();
+                        if (result > controller.RollMean() + controller.RollStdDev())
+                        {
+                            RollAppraisal.Content = "Great!";
+                        }
+                        else if (result > controller.RollMean())
+                        {
+                            RollAppraisal.Content = "Good!";
+                        }
+                        else if (result < controller.RollMean() - controller.RollStdDev())
+                        {
+                            RollAppraisal.Content = "Terrible!";
+                        }
+                        else if (result < controller.RollMean())
+                        {
+                            RollAppraisal.Content = "Subpar";
+                        }
+                        else
+                        {
+                            RollAppraisal.Content = "Average";
+                        }
                     }
                 }));
             }).Start();
