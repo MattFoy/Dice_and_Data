@@ -83,7 +83,7 @@ namespace Dice_and_Data
             //Create a delayed thread to re-enable the roll button.
             new System.Threading.Thread(() =>
             {
-                System.Threading.Thread.Sleep(1000);
+                System.Threading.Thread.Sleep(1000); //1 second
                 this.Dispatcher.BeginInvoke(new Action(() => {
                     RollBtn.IsEnabled = true;
                 }));

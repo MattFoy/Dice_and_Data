@@ -31,7 +31,6 @@ namespace Dice_and_Data.Display
 
         public void LoadHistory()
         {
-            //TODO get this from Data.SQLiteDBWrapper function that loads history
             rollHistory = Data.SQLiteDBWrapper.getReference().GetRollHistory();
 
             if (rp != null && !rollHistory.ContainsKey(rp.ToString(false)))

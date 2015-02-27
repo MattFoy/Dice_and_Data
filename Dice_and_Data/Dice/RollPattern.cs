@@ -114,6 +114,7 @@ namespace Dice_and_Data
             RollPartial partial = SQLiteDBWrapper.getReference().CheckCache(this.ToString(false));
             if (partial.IsValid())
             {
+                // Load the partial into this instance instead of calculating from scratch
                 Trace.WriteLine("[" + this.ToString(false) + "] Cache HIT! Loading combined probability distribution now...");
                 this.pTable = partial.pTable;
                 this.variance = Math.Pow(partial.stdDev, 2);
@@ -126,6 +127,8 @@ namespace Dice_and_Data
             else
             {
                 Trace.WriteLine("[" + this.ToString(false) + "] Cache miss! Generating combined probability distribution now...");
+                
+                // A Stopwatch to time the execution of the calculation.
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
 
@@ -135,6 +138,7 @@ namespace Dice_and_Data
                 if (rolls.Count == 0)
                 {
                     // It's just a constant?
+                    pTable.Add(0, 1);
                 }
                 else if (rolls.Count == 1)
                 {
@@ -147,7 +151,6 @@ namespace Dice_and_Data
                 }
                 else
                 {
-                    //TODO: work some magic to get around the ridiculous performance issues caused by n-ary cartesian products
                     // Step 1: Generate a list of all the list of possible outcomes from each RollPlan. 
                     // (Also calculate the mean while we're traversing this collection)
                     List<List<KeyValuePair<int, double>>> sets = new List<List<KeyValuePair<int, double>>>();
@@ -163,8 +166,11 @@ namespace Dice_and_Data
                         sets.Add(possibilities);
                     }
                     mean = avgSum;
+                    // "sets" is now a list of all the probability distributions in the pattern, ie 2d8 + 1d6 would be 2 sets of
+                    // probabilities, 5d8 + 2d6 + 2d4 + 5 would be 3 sets, etc
 
-                    // Step 2: Generate the cartesian product of these sets with LINQ magic
+
+                    // Step 2: Generate the cartesian product of these sets with LINQ magic (See Dice/AdvMath.cs for details)
                     IEnumerable<IEnumerable<KeyValuePair<int, double>>> result = sets
                         .Select(list => list.AsEnumerable())
                         .CartesianProduct();
@@ -173,6 +179,7 @@ namespace Dice_and_Data
                     // Step 3: Create an array to store combination totals
                     double[] partialProbabilities = Enumerable.Repeat(0.0, max - min + 1).ToArray();
 
+                    // Looping through each possible combination of RollPlan outcomes, adds up the sum and weights it based on the probability.
                     foreach (IEnumerable<KeyValuePair<int, double>> topLvl in result)
                     {
                         int currentSum = 0;
@@ -202,10 +209,13 @@ namespace Dice_and_Data
                 {
                     variance += Math.Pow(entry.Key - mean, 2) * entry.Value;
                 }
-                //Trace.WriteLine("whoa!");
+
+                //Stop the timer and record it.
                 timer.Stop();
                 calcTime = timer.ElapsedMilliseconds;
 
+                // Essentially, if the sum of probabilities add to 1. Anything else is clearly an error
+                // Errors at this stage are usually caused by double/int overflows in the AdvMath functions. (I think!)
                 if (IsValidPTable())
                 {
                     CacheResults();
@@ -238,8 +248,8 @@ namespace Dice_and_Data
             // Replaces all whitespace characters with nothing; thereby removing them.
             pattern = regex.Replace(pattern, "");
 
+            // This merely simplifies parsing the value later instead of performing additional logic
             pattern = pattern.Replace("-", "+-");
-            //pattern = pattern.Replace("- ", "-");
 
             // Forces all uppercase letters to lowercase
             pattern = pattern.ToLower();
@@ -257,11 +267,16 @@ namespace Dice_and_Data
             }
         }
 
+        // This is simply used with a breakpoint for debugging purposes to find any instances of "ToString" being called without a boolean parameter
         public override string ToString()
         {
             return base.ToString();
         }
 
+        // The purpose of this is to represent a RollPattern as a string such as "5d4+2d8"
+        // the boolean "withConstant" determines whether or not the constant is appended.
+        // This is because the calculated probabiltiy distribution doesn't change based on the constant
+        // So "10d4+8d6+5d10+5d12+3d20" is the same with or without a "+10" on the end, as far as caching is concerned
         public String ToString(Boolean withConstant)
         {
             StringBuilder sb = new StringBuilder();
@@ -293,17 +308,8 @@ namespace Dice_and_Data
         private void CacheResults()
         {
             SQLiteDBWrapper db = SQLiteDBWrapper.getReference();
-
             db.CacheRollPattern(this.ToString(false), min, max, mean, StandardDeviation, JSONconverter_pTables.Dict2JSON(pTable), calcTime);
             Trace.WriteLine(this.ToString(false) + " cached in SQLite database.");
-            /*
-            String json1 = JSONconverter_pTables.Dict2JSON(pTable);
-            Trace.WriteLine(json1);
-            Dictionary<int, double> pTable2 = JSONconverter_pTables.JSON2Dict(json1);
-            String json2 = JSONconverter_pTables.Dict2JSON(pTable);
-            Trace.WriteLine(json2);
-            Trace.WriteLine((json1 == json2) ? "Same!" : "Diff!");
-             * */
         }
     }
 }
